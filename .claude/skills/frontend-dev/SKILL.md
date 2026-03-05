@@ -229,6 +229,44 @@ src/assets/styles/
 
 ---
 
+## 请求体完整性规范
+
+| 规则 | 说明 |
+|------|------|
+| ❌ 禁止 UI 可选字段未传入 API | 用户选择/输入的字段必须全部传入请求体 |
+| ✅ 提交函数与表单字段一一对应 | 用 TypeScript interface 约束请求体 |
+
+```typescript
+// ❌ UI 有支付方式选择器，但请求体没传 payMethod
+const payMethod = ref<'wechat' | 'points' | 'mixed'>('wechat')
+
+async function createOrder() {
+  await api.createOrder({
+    items: orderItems.value,
+    addressId: selectedAddress.value.id,
+    // payMethod 忘记传了！支付方式选择 UI 形同虚设
+  })
+}
+
+// ✅ 请求体与 UI 表单字段对应
+interface CreateOrderRequest {
+  items: OrderItem[]
+  addressId: number
+  payMethod: 'wechat' | 'points' | 'mixed'  // 类型约束确保不遗漏
+}
+
+async function createOrder() {
+  const request: CreateOrderRequest = {
+    items: orderItems.value,
+    addressId: selectedAddress.value.id,
+    payMethod: payMethod.value,  // TypeScript 会提示缺少字段
+  }
+  await api.createOrder(request)
+}
+```
+
+---
+
 ## API 错误处理规范
 
 | 规则 | 说明 |
@@ -291,6 +329,7 @@ import type { PageResponse } from '@/types/common'
 | 文件 | 内容 |
 |------|------|
 | `references/frontend-style.md` | UI 风格、Vue 3 规范、Pinia、API 封装、性能优化 |
+| `references/miniapp-pitfalls.md` | uni-app 陷阱：页面栈只读、Storage 清理时机、生命周期双触发、前端校验镜像 |
 | `references/date-time.md` | dayjs/date-fns 日期加减、账期计算、禁止月末对齐 |
 
 ---

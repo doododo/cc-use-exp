@@ -311,6 +311,13 @@ public class UserController {
 }
 ```
 
+### Auth Filter 降级原则
+
+| 规则 | 说明 |
+|------|------|
+| ✅ optional-auth 路径遇到无效/过期/不完整 token 时降级为匿名访问 | 不应返回 401/403 |
+| ❌ 禁止部分凭证用户体验差于匿名用户 | 如：临时 token 在公开接口返回 403 |
+
 ---
 
 ## 输入校验规范
@@ -319,7 +326,19 @@ public class UserController {
 |------|------|
 | ❌ 禁止 `@RequestBody` 不加 `@Valid` | 所有请求体必须校验 |
 | ✅ DTO 字段加约束注解 | `@NotBlank`、`@Size`、`@Pattern` 等 |
+| ✅ 数值字段加范围约束 | `@Min`、`@Max`、`@Positive` 等 |
+| ✅ 分页参数加上限 | `size` 必须 `@Max(100)` 防止大量查询 |
 | ✅ 枚举/状态字段白名单校验 | 自定义校验器或 `@Pattern` |
+
+**常见 DTO 字段校验速查**：
+
+| 字段类型 | 必须注解 | 说明 |
+|---------|---------|------|
+| 数量 quantity | `@NotNull @Min(1)` | 防止 0 或负数（负数可导致反向操作） |
+| 金额 amount/price | `@NotNull @Positive` | 或 `@DecimalMin("0.01")` |
+| 分页 size | `@Min(1) @Max(100)` | 防止 `size=999999` 拖垮数据库 |
+| 分页 page | `@Min(1)` | 页码从 1 开始 |
+| 百分比 rate | `@Min(0) @Max(100)` | 视业务定义范围 |
 
 ```java
 // ❌ 无校验，任意输入直接进入业务逻辑
@@ -335,6 +354,25 @@ public record ShippingRequest(
     @NotBlank @Size(max = 500) String shippingInfo,
     @Pattern(regexp = "pending|shipped|delivered") String giftStatus
 ) {}
+
+// ❌ quantity 只有 @NotNull，负数会导致 Redis DECRBY 反向加库存
+public record CreateOrderRequest(
+    @NotNull Integer quantity  // 可提交 0 或负数
+) {}
+
+// ✅ 数量必须 >= 1
+public record CreateOrderRequest(
+    @NotNull @Min(1) Integer quantity
+) {}
+
+// ❌ 分页无上限，用户可传 size=999999
+@GetMapping("/orders")
+public Result list(@RequestParam int page, @RequestParam int size) { ... }
+
+// ✅ 分页参数加约束
+@GetMapping("/orders")
+public Result list(@RequestParam @Min(1) int page,
+                   @RequestParam @Min(1) @Max(100) int size) { ... }
 ```
 
 ---
@@ -371,7 +409,7 @@ log.debug("Finding user by id: " + userId);
 | `references/java-style.md` | 命名约定、异常处理、Spring Boot、测试规范 |
 | `references/collections.md` | 不可变集合（Guava）、字符串分割 |
 | `references/concurrency.md` | 线程池配置、CompletableFuture 超时 |
-| `references/concurrency-db-patterns.md` | Get-Or-Create 并发、N+1 防范、原子更新 |
+| `references/concurrency-db-patterns.md` | Get-Or-Create 并发、N+1 防范、原子更新、Redis+DB 一致性 |
 | `references/code-patterns.md` | 卫语句、枚举优化、策略工厂模式 |
 | `references/date-time.md` | 日期加减、账期计算、禁止月末对齐 |
 

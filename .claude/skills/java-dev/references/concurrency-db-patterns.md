@@ -112,3 +112,91 @@ public void pay(Long accountId, BigDecimal amount) {
        ") FROM Order o WHERE o.tenantId = :tenantId")
 StatsDTO getStats(@Param("tenantId") Long tenantId);
 ```
+
+---
+
+## 5. Redis + DB 多数据源一致性
+
+**场景**：库存、余额等热数据用 Redis 做原子扣减，DB 做持久化记录。
+**核心问题**：Redis 操作不参与 `@Transactional` 回滚，两者之间存在一致性风险。
+
+### 5.1 单一数据源原则（禁止 TOCTOU 跨数据源）
+
+校验和扣减必须在同一数据源完成，禁止用 DB 校验 + Redis 扣减。
+
+```java
+// ❌ TOCTOU 竞态：DB 校验与 Redis 扣减数据源不一致
+@Transactional
+public void createOrder(OrderRequest request) {
+    Product product = productRepo.findById(request.getProductId());
+    if (product.getStock() < request.getQuantity()) {  // DB 校验
+        throw new BusinessException("库存不足");
+    }
+    // 高并发下 DB stock 可能大于 Redis stock，校验通过但扣减失败
+    redisTemplate.opsForValue().decrement("stock:" + request.getProductId(), request.getQuantity());  // Redis 扣减
+}
+
+// ✅ 完全依赖 Redis 原子扣减结果，不做 DB 前置校验
+@Transactional
+public void createOrder(OrderRequest request) {
+    Long remaining = redisTemplate.opsForValue()
+        .decrement("stock:" + request.getProductId(), request.getQuantity());
+    if (remaining == null || remaining < 0) {  // null: key 不存在; < 0: 库存不足
+        // 扣减失败，回补 Redis
+        redisTemplate.opsForValue()
+            .increment("stock:" + request.getProductId(), request.getQuantity());
+        throw new BusinessException("库存不足");
+    }
+    // Redis 扣减成功，继续 DB 操作...
+    orderRepo.save(buildOrder(request));
+}
+```
+
+### 5.2 操作顺序：先 DB 后 Redis，或 Redis 先扣 + 失败补偿
+
+Redis 操作不受 `@Transactional` 管理，DB 回滚时 Redis 不会自动恢复。
+
+| 方案 | 操作顺序 | 适用场景 |
+|------|---------|---------|
+| **A. 先 DB 后 Redis** | DB 写入 -> Redis 更新 | DB 为主、Redis 为缓存 |
+| **B. Redis 先扣 + 补偿** | Redis 扣减 -> DB 写入 -> 失败时回补 Redis | Redis 为主、高并发扣减 |
+
+```java
+// ❌ Redis 先扣，DB 后写，无补偿 —— DB 回滚后 Redis 库存永久丢失
+@Transactional
+public void lockStock(Long productId, int quantity) {
+    redisTemplate.opsForValue().decrement("stock:" + productId, quantity);  // Redis 先扣
+    stockLockRepo.save(new StockLock(productId, quantity));  // DB 后写
+    // 如果 save 抛异常，DB 回滚，但 Redis 已扣减，库存"漏"掉
+}
+
+// ✅ 方案 B：Redis 先扣 + try-catch 补偿
+@Transactional
+public void lockStock(Long productId, int quantity) {
+    // 1. Redis 原子扣减
+    Long remaining = redisTemplate.opsForValue()
+        .decrement("stock:" + productId, quantity);
+    if (remaining == null || remaining < 0) {
+        redisTemplate.opsForValue().increment("stock:" + productId, quantity);
+        throw new BusinessException("库存不足");
+    }
+    try {
+        // 2. DB 持久化
+        stockLockRepo.save(new StockLock(productId, quantity));
+        orderRepo.save(buildOrder(productId, quantity));
+    } catch (Exception e) {
+        // 3. DB 失败，回补 Redis
+        redisTemplate.opsForValue().increment("stock:" + productId, quantity);
+        throw e;
+    }
+}
+```
+
+### 5.3 决策速查
+
+```
+Redis + DB 一起用？
+├─ Redis 仅做缓存（读多写少）→ 方案 A：先写 DB，再更新 Redis
+├─ Redis 做原子扣减（高并发）→ 方案 B：Redis 先扣，失败补偿
+└─ 校验逻辑 → 只信任原子操作结果，不做跨数据源前置校验
+```
