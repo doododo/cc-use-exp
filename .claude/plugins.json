@@ -1,0 +1,52 @@
+{
+  "recommendations": [
+    {
+      "id": "context7",
+      "marketplace": "claude-plugins-official",
+      "name": "Context7",
+      "description": "精准第三方库文档查询和代码示例"
+    },
+    {
+      "id": "frontend-design",
+      "marketplace": "claude-plugins-official",
+      "name": "Frontend Design",
+      "description": "生成高质量前端界面代码"
+    },
+    {
+      "id": "gopls-lsp",
+      "marketplace": "claude-plugins-official",
+      "name": "Go LSP",
+      "description": "Go 语言 LSP 支持（gopls）"
+    },
+    {
+      "id": "jdtls-lsp",
+      "marketplace": "claude-plugins-official",
+      "name": "Java LSP",
+      "description": "Java 语言 LSP 支持（jdtls）"
+    },
+    {
+      "id": "playwright",
+      "marketplace": "claude-plugins-official",
+      "name": "Playwright",
+      "description": "浏览器自动化测试和网页交互"
+    },
+    {
+      "id": "pyright-lsp",
+      "marketplace": "claude-plugins-official",
+      "name": "Python LSP",
+      "description": "Python 语言 LSP 支持（pyright）"
+    },
+    {
+      "id": "security-guidance",
+      "marketplace": "claude-plugins-official",
+      "name": "Security Guidance",
+      "description": "代码安全审计和漏洞检测指导"
+    },
+    {
+      "id": "typescript-lsp",
+      "marketplace": "claude-plugins-official",
+      "name": "TypeScript LSP",
+      "description": "TypeScript/JavaScript LSP 支持"
+    }
+  ]
+}

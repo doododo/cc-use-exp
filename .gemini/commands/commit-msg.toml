@@ -1,63 +1,41 @@
-# 生成 Git Commit Message
-# 用法: /commit-msg 或 /commit-msg all
+# 结构化 Commit Message 生成
+# 用法: /commit-msg [all]
 
-description = "生成 Git Commit Message"
+description = "分析未提交的代码变更，生成结构化的 commit message。"
 
 prompt = """
-分析未提交的代码变更，生成结构化的 commit message。
+你是一位严谨的 Git 提交规范专家。
 
-## 参数
+## 执行逻辑 (Execution Logic)
 
-{{args}}
+### 1. 获取变更内容 (Diff Data)
+- **Staged (即将提交)**:
+!{git diff --cached}
+- **Unstaged (未暂存)**:
+!{git diff}
 
-## 执行步骤
+### 2. 参数处理逻辑 (Logic)
+- 如果 `{{args}}` 包含 `all`：综合分析 Staged 和 Unstaged 的所有差异。
+- 默认情况：**仅分析** Staged 差异，忽略 Unstaged 差异。
 
-### 1. 获取变更内容
+### 3. 分析变更类型 (Classification)
+根据选定的变更内容判断最合适的类型：
+- **feat**: 新功能
+- **fix**: 修复 bug
+- **refactor**: 重构（不改变功能）
+- **style**: 格式调整（不影响代码逻辑）
+- **docs**: 文档更新
+- **test**: 测试相关
+- **chore**: 构建、依赖、配置等
 
-```bash
-# 查看已暂存的变更
-git diff --cached --stat
-git diff --cached
+### 3. 生成规则 (Rules)
+- **subject**: 简洁描述，不超过 50 字符，必须使用简体中文。
+- **body**: 详细描述变更点，必须使用列表形式，使用简体中文。
+- **禁令**: ❌ 严禁使用 Emoji，❌ 严禁包含 AI 生成声明，❌ 严禁包含 Co-Authored-By。
 
-# 如果没有暂存内容，查看所有变更
-git diff --stat
-git diff
-```
+## 输出格式 (Output Format)
 
-### 2. 分析变更类型
-
-根据变更内容判断类型：
-
-| 类型 | 适用场景 |
-|------|---------|
-| feat | 新功能 |
-| fix | 修复 bug |
-| refactor | 重构（不改变功能） |
-| style | 格式调整（不影响代码逻辑） |
-| docs | 文档更新 |
-| test | 测试相关 |
-| chore | 构建、依赖、配置等 |
-
-### 3. 生成 commit message
-
-格式要求：
-```
-<type>: <subject>
-
-<body>
-```
-
-规则：
-- subject: 简洁描述，不超过 50 字符，中文
-- body: 变更详情，用列表形式，中文
-- 不要加 emoji
-- 不要加 AI 生成声明
-- 不要加 Co-Authored-By
-
-### 4. 输出格式
-
-## 建议的 Commit Message
-
+### 📋 建议的 Commit Message
 ---
 <type>: <subject>
 
@@ -66,22 +44,17 @@ git diff
 - <变更点3>
 ---
 
-## 变更文件
-
+### 📂 变更文件
 | 文件 | 变更类型 | 说明 |
 |------|---------|------|
-| file1 | 新增/修改/删除 | 简要说明 |
+| [文件名] | [新增/修改/删除] | [简要说明] |
 
-## 快速提交
-
+### 🚀 快速提交
 复制以下命令手动执行（不要代执行）：
-git add <文件列表> && git commit -m "<生成的message>"
+`git add <相关文件> && git commit -m "<生成的完整message>"`
 
 ---
 
-参数说明：
-- 无参数：分析已暂存的变更
-- 参数包含 "all"：分析所有变更（含未暂存）
-
 请使用简体中文输出。
+> 📋 本回复遵循：`Conventional Commits` 结构化规范
 """

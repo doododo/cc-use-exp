@@ -1,10 +1,15 @@
 {
   "$schema": "https://geminicli.com/schemas/settings.json",
+  "model": {
+    "name": "flash"
+  },
   "model_aliases": {
     "pro": "gemini-3.1-pro-preview",
     "flash": "gemini-3-flash-preview"
   },
-  "model": "pro",
+  "experimental": {
+    "plan": true
+  },
   "core": {
     "checkForUpdates": true,
     "theme": "Default"
@@ -39,7 +44,9 @@
       "command": "npx",
       "args": [
         "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
+        "@modelcontextprotocol/server-sequential-thinking",
+        "--enable-fs-tools",
+        "--enable-code-intel-tools"
       ],
       "trust": true
     },

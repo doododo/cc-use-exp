@@ -144,6 +144,7 @@ rm -rf ~/.gemini/commands ~/.gemini/skills ~/.gemini/rules
 cp -r .gemini/commands ~/.gemini/
 cp -r .gemini/skills ~/.gemini/
 cp -r .gemini/rules ~/.gemini/
+cp -r .gemini/policies ~/.gemini/
 cp .gemini/GEMINI.md ~/.gemini/
 cp .gemini/settings.json ~/.gemini/
 ```
@@ -640,7 +641,32 @@ GEMINI.md 自动加载，提供以下保护：
 | `/fix debug` | 复杂问题排查 | `/fix debug 表格数据不显示` |
 | `/check-toolsearch` | 检查 ToolSearch 是否可用 | `/check-toolsearch` |
 
-### 1.4 MCP 扩展推荐（声明式安装）
+### 1.4 Claude Code 推荐插件（声明式安装）
+
+本项目通过 `.claude/plugins.json` 声明了推荐的插件。
+
+| 插件 | 用途 |
+|------|------|
+| `context7` | 精准第三方库文档查询 |
+| `frontend-design` | 生成高质量前端界面代码 |
+| `gopls-lsp` | Go 语言 LSP 支持 |
+| `jdtls-lsp` | Java 语言 LSP 支持 |
+| `playwright` | 浏览器自动化测试 |
+| `pyright-lsp` | Python 语言 LSP 支持 |
+| `security-guidance` | 代码安全审计指导 |
+| `typescript-lsp` | TypeScript/JS LSP 支持 |
+
+**推荐安装方式：**
+运行 `./tools/sync-config.sh`，脚本会自动检测缺失的插件并引导你一键安装。
+
+**手动安装：**
+```bash
+claude plugin install context7@claude-plugins-official
+claude plugin install frontend-design@claude-plugins-official
+# ... 其他插件同理
+```
+
+### 1.5 Gemini CLI 推荐扩展（声明式安装）
 
 本项目通过 `.gemini/extensions.json` 声明了推荐的扩展。
 
@@ -802,6 +828,8 @@ A: 分步骤处理：
 .gemini/
 ├── GEMINI.md           # 核心规则（通过 @import 引入 rules）
 ├── settings.json       # 用户设置
+├── policies/           # 安全策略（允许 git 等命令执行）
+│   └── git-rules.toml
 ├── rules/              # 规则：通过 @import 始终加载
 │   ├── file-size-limit.md  # 文件行数限制
 │   └── frontend-style.md   # 前端规范补充（Pinia/API/TS/性能）
@@ -912,6 +940,7 @@ rm -rf ~/.gemini/commands ~/.gemini/skills ~/.gemini/rules
 cp -r .gemini/commands ~/.gemini/
 cp -r .gemini/skills ~/.gemini/
 cp -r .gemini/rules ~/.gemini/
+cp -r .gemini/policies ~/.gemini/
 cp .gemini/GEMINI.md ~/.gemini/
 cp .gemini/settings.json ~/.gemini/
 
@@ -929,6 +958,7 @@ rm -rf ~/.gemini/commands ~/.gemini/skills ~/.gemini/rules
 cp -r .gemini/commands ~/.gemini/
 cp -r .gemini/skills ~/.gemini/
 cp -r .gemini/rules ~/.gemini/
+cp -r .gemini/policies ~/.gemini/
 cp .gemini/GEMINI.md ~/.gemini/
 cp .gemini/settings.json ~/.gemini/
 ```
