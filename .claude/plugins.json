@@ -50,7 +50,7 @@
     },
     {
       "id": "claude-hud",
-      "marketplace": "jarrodwatts",
+      "marketplace": "claude-hud",
       "name": "Claude HUD",
       "description": "终端状态栏实时显示 context 用量、工具状态、agent 进度"
     },
